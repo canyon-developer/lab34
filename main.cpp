@@ -1,4 +1,4 @@
-// Between steps 3 and 4: implement Dijkstra and display minimum walking times.
+// Step 4: show shortest walking times and reconstruct each fastest route.
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -235,8 +235,19 @@ void printShortestPaths(const Graph& graph, int start) {
         cout << "  " << stopLabel(vertex) << ": ";
         if (result.distance[vertex] == INF)
             cout << "unreachable\n";
-        else
-            cout << result.distance[vertex] << " min\n";
+        else {
+            cout << result.distance[vertex] << " min; route: ";
+            vector<int> path;
+            for (int current = vertex; current != -1; current = result.parent[current])
+                path.push_back(current);
+            reverse(path.begin(), path.end());
+            for (size_t index = 0; index < path.size(); ++index) {
+                if (index != 0)
+                    cout << " -> ";
+                cout << stopLabel(path[index]);
+            }
+            cout << '\n';
+        }
     }
 }
 
