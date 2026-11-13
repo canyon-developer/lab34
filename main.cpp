@@ -1,4 +1,4 @@
-// Between steps 2 and 3: name campus stops and display walkway times.
+// Step 3: apply DFS and BFS to a campus walking network.
 #include <algorithm>
 #include <iostream>
 #include <queue>
@@ -170,8 +170,21 @@ void displayCampus(const Graph& graph) {
 
 void printTraversal(const vector<int>& order) {
     for (int vertex : order)
-        cout << vertex << ' ';
-    cout << '\n';
+        cout << "  " << stopLabel(vertex) << '\n';
+}
+
+void exploreCampus(const Graph& graph, int start) {
+    cout << "\nCampus exploration order (DFS) from " << stopLabel(start) << ":\n"
+         << "Explore one branch before returning to other branches.\n"
+         << "This is a visit order; consecutive stops may not share a walkway.\n";
+    printTraversal(graph.dfs(start));
+}
+
+void nearbyStops(const Graph& graph, int start) {
+    cout << "\nStops by number of walkways (BFS) from " << stopLabel(start) << ":\n"
+         << "Visit stops in increasing number of walkway connections.\n"
+         << "BFS ignores walking times; use shortest paths for fastest routes.\n";
+    printTraversal(graph.bfs(start));
 }
 
 Graph createGraph() {
@@ -207,9 +220,7 @@ Graph createGraph() {
 int main() {
     Graph graph = createGraph();
     displayCampus(graph);
-    cout << "DFS starting from vertex 0:\n";
-    printTraversal(graph.dfs(0));
-    cout << "BFS starting from vertex 0:\n";
-    printTraversal(graph.bfs(0));
+    exploreCampus(graph, 0);
+    nearbyStops(graph, 0);
     return 0;
 }
