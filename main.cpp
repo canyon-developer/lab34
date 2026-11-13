@@ -1,5 +1,6 @@
-// Between the original demo and step 1: add DFS and exercise it in the driver.
+// Step 1: add DFS and BFS to the module's weighted, undirected graph demo.
 #include <iostream>
+#include <queue>
 #include <stack>
 #include <stdexcept>
 #include <utility>
@@ -55,6 +56,30 @@ public:
         return order;
     }
 
+    // Mark on insertion so each vertex enters the queue only once.
+    vector<int> bfs(int start) const {
+        if (!isVertex(start))
+            throw out_of_range("Invalid starting vertex.");
+        vector<bool> visited(adjList.size(), false);
+        vector<int> order;
+        queue<int> pending;
+        visited[start] = true;
+        pending.push(start);
+
+        while (!pending.empty()) {
+            int current = pending.front();
+            pending.pop();
+            order.push_back(current);
+            for (const Pair& neighbor : adjList[current]) {
+                if (!visited[neighbor.first]) {
+                    visited[neighbor.first] = true;
+                    pending.push(neighbor.first);
+                }
+            }
+        }
+        return order;
+    }
+
     void printGraph() const {
         cout << "Graph's adjacency list:\n";
         for (int vertex = 0; vertex < static_cast<int>(adjList.size()); ++vertex) {
@@ -81,5 +106,7 @@ int main() {
     graph.printGraph();
     cout << "DFS starting from vertex 0:\n";
     printTraversal(graph.dfs(0));
+    cout << "BFS starting from vertex 0:\n";
+    printTraversal(graph.bfs(0));
     return 0;
 }
