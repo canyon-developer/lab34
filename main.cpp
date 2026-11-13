@@ -1,4 +1,5 @@
-// Step 1: add DFS and BFS to the module's weighted, undirected graph demo.
+// Step 2: remove two vertices, add six, and change the edge weights.
+#include <algorithm>
 #include <iostream>
 #include <queue>
 #include <stack>
@@ -16,20 +17,70 @@ struct Edge {
 typedef pair<int, int> Pair;
 
 class Graph {
+    vector<bool> active;
+
 public:
     // Each pair contains a neighboring vertex and its edge weight.
     vector<vector<Pair>> adjList;
 
     Graph(const vector<Edge>& edges) {
         adjList.resize(SIZE);
-        for (const Edge& edge : edges) {
-            adjList[edge.src].push_back(make_pair(edge.dest, edge.weight));
-            adjList[edge.dest].push_back(make_pair(edge.src, edge.weight));
-        }
+        active.assign(SIZE, true);
+        for (const Edge& edge : edges)
+            addEdge(edge.src, edge.dest, edge.weight);
     }
 
     bool isVertex(int vertex) const {
-        return vertex >= 0 && vertex < static_cast<int>(adjList.size());
+        return vertex >= 0 && vertex < static_cast<int>(adjList.size())
+               && active[vertex];
+    }
+
+    // IDs stay stable: removing a vertex never renumbers the other vertices.
+    void removeVertex(int vertex) {
+        if (!isVertex(vertex))
+            throw out_of_range("Invalid vertex to remove.");
+        adjList[vertex].clear();
+        active[vertex] = false;
+        for (vector<Pair>& neighbors : adjList) {
+            neighbors.erase(remove_if(neighbors.begin(), neighbors.end(),
+                [vertex](const Pair& edge) { return edge.first == vertex; }),
+                neighbors.end());
+        }
+    }
+
+    int addVertex() {
+        adjList.emplace_back();
+        active.push_back(true);
+        return static_cast<int>(adjList.size()) - 1;
+    }
+
+    void addEdge(int src, int dest, int weight) {
+        if (!isVertex(src) || !isVertex(dest))
+            throw out_of_range("Invalid edge endpoint.");
+        if (weight <= 0)
+            throw invalid_argument("Weights must be positive.");
+        adjList[src].push_back(make_pair(dest, weight));
+        adjList[dest].push_back(make_pair(src, weight));
+    }
+
+    void setWeight(int src, int dest, int weight) {
+        if (!isVertex(src) || !isVertex(dest))
+            throw out_of_range("Invalid edge endpoint.");
+        if (weight <= 0)
+            throw invalid_argument("Weights must be positive.");
+        bool found = false;
+        for (Pair& neighbor : adjList[src]) {
+            if (neighbor.first == dest) {
+                neighbor.second = weight;
+                found = true;
+            }
+        }
+        if (!found)
+            throw invalid_argument("Edge does not exist.");
+        for (Pair& neighbor : adjList[dest]) {
+            if (neighbor.first == src)
+                neighbor.second = weight;
+        }
     }
 
     // Mark on removal from the stack so the last neighbor is explored first.
@@ -83,6 +134,8 @@ public:
     void printGraph() const {
         cout << "Graph's adjacency list:\n";
         for (int vertex = 0; vertex < static_cast<int>(adjList.size()); ++vertex) {
+            if (!isVertex(vertex))
+                continue;
             cout << vertex << " --> ";
             for (const Pair& neighbor : adjList[vertex])
                 cout << "(" << neighbor.first << ", " << neighbor.second << ") ";
@@ -97,12 +150,38 @@ void printTraversal(const vector<int>& order) {
     cout << '\n';
 }
 
-int main() {
+Graph createGraph() {
     vector<Edge> edges = {
         {0,1,12},{0,2,8},{0,3,21},{2,3,6},{2,6,2},
         {5,6,6},{4,5,9},{2,4,4},{2,5,5}
     };
     Graph graph(edges);
+    // Delete two original vertices and all edges incident to them.
+    graph.removeVertex(1);
+    graph.removeVertex(6);
+
+    // Change every surviving original edge weight.
+    graph.setWeight(0, 2, 6);
+    graph.setWeight(0, 3, 15);
+    graph.setWeight(2, 3, 5);
+    graph.setWeight(4, 5, 7);
+    graph.setWeight(2, 4, 4);
+    graph.setWeight(2, 5, 9);
+
+    // Add six new vertices, with IDs 7 through 12 (11 active vertices total).
+    for (int count = 0; count < 6; ++count)
+        graph.addVertex();
+    vector<Edge> newEdges = {
+        {0,7,3},{7,8,4},{2,8,6},{8,9,2},{4,9,5},{9,10,3},
+        {5,10,4},{10,11,2},{11,12,5},{3,12,8},{7,12,11}
+    };
+    for (const Edge& edge : newEdges)
+        graph.addEdge(edge.src, edge.dest, edge.weight);
+    return graph;
+}
+
+int main() {
+    Graph graph = createGraph();
     graph.printGraph();
     cout << "DFS starting from vertex 0:\n";
     printTraversal(graph.dfs(0));
