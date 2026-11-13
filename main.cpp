@@ -1,9 +1,10 @@
-// Step 2: remove two vertices, add six, and change the edge weights.
+// Between steps 2 and 3: name campus stops and display walkway times.
 #include <algorithm>
 #include <iostream>
 #include <queue>
 #include <stack>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 using namespace std;
@@ -144,6 +145,29 @@ public:
     }
 };
 
+// Vertices 1 and 6 remain retired; their IDs are never reused.
+const vector<string> CAMPUS_NAMES = {
+    "Main Gate", "Retired Parking", "Library", "Science Hall",
+    "Student Center", "Gym", "Retired Annex", "Cafeteria", "Bookstore",
+    "Arts Center", "Engineering Hall", "Residence Hall", "Transit Stop"
+};
+
+string stopLabel(int vertex) {
+    return to_string(vertex) + " (" + CAMPUS_NAMES.at(vertex) + ")";
+}
+
+void displayCampus(const Graph& graph) {
+    cout << "Campus Walking Network (walkway times in minutes):\n";
+    for (int vertex = 0; vertex < static_cast<int>(graph.adjList.size()); ++vertex) {
+        if (!graph.isVertex(vertex))
+            continue;
+        cout << stopLabel(vertex) << " connects to:\n";
+        for (const Pair& neighbor : graph.adjList[vertex])
+            cout << "  -> " << stopLabel(neighbor.first) << ": "
+                 << neighbor.second << " min\n";
+    }
+}
+
 void printTraversal(const vector<int>& order) {
     for (int vertex : order)
         cout << vertex << ' ';
@@ -182,7 +206,7 @@ Graph createGraph() {
 
 int main() {
     Graph graph = createGraph();
-    graph.printGraph();
+    displayCampus(graph);
     cout << "DFS starting from vertex 0:\n";
     printTraversal(graph.dfs(0));
     cout << "BFS starting from vertex 0:\n";
