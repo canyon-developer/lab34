@@ -1,6 +1,8 @@
-// Step 3: apply DFS and BFS to a campus walking network.
+// Between steps 3 and 4: implement Dijkstra and display minimum walking times.
 #include <algorithm>
+#include <functional>
 #include <iostream>
+#include <limits>
 #include <queue>
 #include <stack>
 #include <stdexcept>
@@ -16,6 +18,12 @@ struct Edge {
 };
 
 typedef pair<int, int> Pair;
+const long long INF = numeric_limits<long long>::max();
+
+struct ShortestPaths {
+    vector<long long> distance;
+    vector<int> parent;
+};
 
 class Graph {
     vector<bool> active;
@@ -132,6 +140,37 @@ public:
         return order;
     }
 
+    // Dijkstra: positive edge weights represent walking times in minutes.
+    ShortestPaths shortestPaths(int start) const {
+        if (!isVertex(start))
+            throw out_of_range("Invalid starting vertex.");
+        ShortestPaths result;
+        result.distance.assign(adjList.size(), INF);
+        result.parent.assign(adjList.size(), -1);
+        typedef pair<long long, int> DistanceVertex;
+        priority_queue<DistanceVertex, vector<DistanceVertex>,
+                       greater<DistanceVertex>> pending;
+        result.distance[start] = 0;
+        pending.push(make_pair(0, start));
+
+        while (!pending.empty()) {
+            const DistanceVertex next = pending.top();
+            pending.pop();
+            int current = next.second;
+            if (next.first != result.distance[current])
+                continue; // Ignore entries superseded by a shorter route.
+            for (const Pair& neighbor : adjList[current]) {
+                long long candidate = next.first + neighbor.second;
+                if (candidate < result.distance[neighbor.first]) {
+                    result.distance[neighbor.first] = candidate;
+                    result.parent[neighbor.first] = current;
+                    pending.push(make_pair(candidate, neighbor.first));
+                }
+            }
+        }
+        return result;
+    }
+
     void printGraph() const {
         cout << "Graph's adjacency list:\n";
         for (int vertex = 0; vertex < static_cast<int>(adjList.size()); ++vertex) {
@@ -187,6 +226,20 @@ void nearbyStops(const Graph& graph, int start) {
     printTraversal(graph.bfs(start));
 }
 
+void printShortestPaths(const Graph& graph, int start) {
+    const ShortestPaths result = graph.shortestPaths(start);
+    cout << "\nShortest walking times from " << stopLabel(start) << ":\n";
+    for (int vertex = 0; vertex < static_cast<int>(graph.adjList.size()); ++vertex) {
+        if (!graph.isVertex(vertex))
+            continue;
+        cout << "  " << stopLabel(vertex) << ": ";
+        if (result.distance[vertex] == INF)
+            cout << "unreachable\n";
+        else
+            cout << result.distance[vertex] << " min\n";
+    }
+}
+
 Graph createGraph() {
     vector<Edge> edges = {
         {0,1,12},{0,2,8},{0,3,21},{2,3,6},{2,6,2},
@@ -222,5 +275,6 @@ int main() {
     displayCampus(graph);
     exploreCampus(graph, 0);
     nearbyStops(graph, 0);
+    printShortestPaths(graph, 0);
     return 0;
 }
