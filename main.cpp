@@ -1,9 +1,10 @@
-// Step 5: display the campus minimum spanning tree and its total weight.
+// Step 6: add an interactive menu with validated choices and starting stops.
 #include <algorithm>
 #include <functional>
 #include <iostream>
 #include <limits>
 #include <queue>
+#include <sstream>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -340,12 +341,62 @@ Graph createGraph() {
     return graph;
 }
 
+// Read a whole line so malformed input cannot leave cin in a failed state.
+// False means end-of-input, allowing clean exits even during a stop prompt.
+bool readInteger(const string& prompt, int minimum, int maximum, int& value) {
+    string line;
+    while (true) {
+        cout << prompt;
+        if (!getline(cin, line))
+            return false;
+        istringstream input(line);
+        char extra;
+        if ((input >> value) && !(input >> extra)
+            && value >= minimum && value <= maximum)
+            return true;
+        cout << "Enter a whole number from " << minimum << " to " << maximum << ".\n";
+    }
+}
+
+bool chooseStart(const Graph& graph, int& start) {
+    cout << "Available campus stops:\n";
+    for (int vertex = 0; vertex < static_cast<int>(graph.adjList.size()); ++vertex) {
+        if (graph.isVertex(vertex))
+            cout << "  " << stopLabel(vertex) << '\n';
+    }
+    while (readInteger("Starting stop ID: ", 0,
+                       static_cast<int>(graph.adjList.size()) - 1, start)) {
+        if (graph.isVertex(start))
+            return true;
+        cout << "That stop has been removed. Choose an available stop.\n";
+    }
+    return false;
+}
+
 int main() {
     Graph graph = createGraph();
-    displayCampus(graph);
-    exploreCampus(graph, 0);
-    nearbyStops(graph, 0);
-    printShortestPaths(graph, 0);
-    printMinimumSpanningTree(graph);
+    while (true) {
+        cout << "\nCampus Walking Network Menu:\n"
+             << "[1] Display campus walkways\n"
+             << "[2] Explore campus (DFS)\n"
+             << "[3] Find stops by number of walkways (BFS)\n"
+             << "[4] Calculate fastest walking routes\n"
+             << "[5] Find minimum spanning tree for walkway maintenance\n"
+             << "[0] Exit\n";
+        int choice;
+        if (!readInteger("Enter your choice: ", 0, 5, choice) || choice == 0)
+            break;
+        int start = 0;
+        if (choice >= 2 && choice <= 4 && !chooseStart(graph, start))
+            break;
+        switch (choice) {
+            case 1: displayCampus(graph); break;
+            case 2: exploreCampus(graph, start); break;
+            case 3: nearbyStops(graph, start); break;
+            case 4: printShortestPaths(graph, start); break;
+            case 5: printMinimumSpanningTree(graph); break;
+        }
+    }
+    cout << "Goodbye!\n";
     return 0;
 }
