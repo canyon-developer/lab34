@@ -1,4 +1,4 @@
-// Step 4: show shortest walking times and reconstruct each fastest route.
+// Step 5: display the campus minimum spanning tree and its total weight.
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -171,6 +171,38 @@ public:
         return result;
     }
 
+    // Prim: choose the cheapest edge joining a new vertex to the tree.
+    // A disconnected graph produces a minimum spanning forest instead.
+    vector<Edge> minimumSpanningTree() const {
+        vector<bool> visited(adjList.size(), false);
+        vector<Edge> tree;
+        // Queue entries are (weight, (source, destination)).
+        typedef pair<int, Pair> Candidate;
+        priority_queue<Candidate, vector<Candidate>, greater<Candidate>> pending;
+        for (int root = 0; root < static_cast<int>(adjList.size()); ++root) {
+            if (!isVertex(root) || visited[root])
+                continue;
+            pending.push(make_pair(0, make_pair(-1, root)));
+            while (!pending.empty()) {
+                const Candidate next = pending.top();
+                pending.pop();
+                int src = next.second.first;
+                int dest = next.second.second;
+                if (visited[dest])
+                    continue;
+                visited[dest] = true;
+                if (src != -1)
+                    tree.push_back({src, dest, next.first});
+                for (const Pair& neighbor : adjList[dest]) {
+                    if (!visited[neighbor.first])
+                        pending.push(make_pair(neighbor.second,
+                                               make_pair(dest, neighbor.first)));
+                }
+            }
+        }
+        return tree;
+    }
+
     void printGraph() const {
         cout << "Graph's adjacency list:\n";
         for (int vertex = 0; vertex < static_cast<int>(adjList.size()); ++vertex) {
@@ -251,6 +283,33 @@ void printShortestPaths(const Graph& graph, int start) {
     }
 }
 
+void printMinimumSpanningTree(const Graph& graph) {
+    const vector<Edge> tree = graph.minimumSpanningTree();
+    int vertexCount = 0;
+    for (int vertex = 0; vertex < static_cast<int>(graph.adjList.size()); ++vertex) {
+        if (graph.isVertex(vertex))
+            ++vertexCount;
+    }
+    const int components = vertexCount - static_cast<int>(tree.size());
+    cout << "\nCampus walkway maintenance plan:\n"
+         << "Connect all stops with minimum total walkway time.\n";
+    if (components > 1)
+        cout << "Network disconnected: minimum spanning forest with "
+             << components << " components.\n";
+    else if (vertexCount == 0)
+        cout << "No active campus stops.\n";
+    else
+        cout << "Minimum spanning tree edges:\n";
+    long long total = 0;
+    for (const Edge& edge : tree) {
+        cout << "  " << stopLabel(edge.src) << " <-> " << stopLabel(edge.dest)
+             << ": " << edge.weight << " min\n";
+        total += edge.weight;
+    }
+    cout << "Selected walkways: " << tree.size()
+         << "\nTotal walkway time: " << total << " min\n";
+}
+
 Graph createGraph() {
     vector<Edge> edges = {
         {0,1,12},{0,2,8},{0,3,21},{2,3,6},{2,6,2},
@@ -287,5 +346,6 @@ int main() {
     exploreCampus(graph, 0);
     nearbyStops(graph, 0);
     printShortestPaths(graph, 0);
+    printMinimumSpanningTree(graph);
     return 0;
 }
